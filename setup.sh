@@ -1,20 +1,35 @@
 #!/usr/bin/env bash
 
+set -x
+
+RAILS_NEW_COMMAND="$RAILS_NEW_COMMAND rails new --skip-bundle --skip-webpack-install"
 if [[ "$1" = "without-turbolinks" ]]; then
-  APP_NAME="demo-code-without-turbolinks"
-  RAILS_OPTION="--skip-turbolinks"
   PORT=4000
+  $RAILS_NEW_COMMAND demo-code-without-turbolinks --skip-turbolinks 
+  cd demo-code-without-turbolinks
 elif [[ "$1" = "with-turbolinks" ]]; then
-  APP_NAME="demo-code-with-turbolinks"
-  RAILS_OPTION=""
   PORT=4100
+  $RAILS_NEW_COMMAND demo-code-with-turbolinks
+  cd demo-code-with-turbolinks
+  yarn add turbolinks-prefetch
+  mkdir -p app/javascript/packs
+  cat > app/javascript/packs/application.js <<"DONE"
+require("@rails/ujs").start()
+require("turbolinks").start()
+require("@rails/activestorage").start()
+require("channels")
+
+import TurbolinksPrefetch from 'turbolinks-prefetch';
+TurbolinksPrefetch.start();
+
+DONE
 else
-  echo "parameter must be 'without-turbolinks' or 'with-turbolinks'"
+  echo "Usage: ./setup.sh <option> (where option is 'without-turbolinks' or 'with-turbolinks')"
   exit 1
 fi
-
-rails new $APP_NAME $RAILS_OPTION
-cd $APP_NAME
+bundle remove tzinfo-data
+bundle install
+rails webpacker:install
 
 mkdir -p app/views/pages
 cat > app/views/pages/home.html.erb <<"DONE"
@@ -61,15 +76,15 @@ DONE
 cat > app/controllers/pages_controller.rb <<"DONE"
 class PagesController < ApplicationController
   def home
-    sleep(1)
+    sleep(0.5)
   end
 
   def dogs
-    sleep(1)
+    sleep(0.5)
   end
 
   def puppies
-    sleep(1)
+    sleep(0.5)
   end
 end
 
